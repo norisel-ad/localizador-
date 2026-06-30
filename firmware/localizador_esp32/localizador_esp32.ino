@@ -95,19 +95,22 @@ void loop() {
 void iniciarPuertos() {
   gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
   Wire.begin(MPU_SDA_PIN, MPU_SCL_PIN);
+  delay(100);
 
   Serial.println("Puertos iniciados.");
 }
 
 void iniciarMPU() {
+  Serial.print("MPU6050: ");
   mpu.initialize();
+  delay(200);
 
   if (mpu.testConnection()) {
     mpuReady = true;
-    Serial.println("MPU6050: OK");
+    Serial.println("OK");
   } else {
     mpuReady = false;
-    Serial.println("MPU6050: no detectado. Revisa SDA, SCL, VCC y GND.");
+    Serial.println("no detectado. Revisa SDA (pin 21), SCL (pin 22), VCC y GND.");
   }
 }
 
@@ -134,20 +137,6 @@ void iniciarWiFi() {
     wifiReady = false;
     Serial.println("WiFi: no se pudo conectar. Revisa SSID y password.");
   }
-}
-
-void iniciarGSM() {
-  Serial.println("Probando SIM900...");
-
-  gsmReady = enviarComandoGSM("AT", "OK", GSM_COMMAND_TIMEOUT_MS);
-  if (!gsmReady) {
-    Serial.println("SIM900: no responde. Revisa alimentacion, antena, RX/TX y GND comun.");
-    return;
-  }
-
-  enviarComandoGSM("ATE0", "OK", GSM_COMMAND_TIMEOUT_MS);
-  enviarComandoGSM("AT+CMGF=1", "OK", GSM_COMMAND_TIMEOUT_MS);
-  Serial.println("SIM900: OK, modo SMS texto activo.");
 }
 
 // =========================
@@ -197,6 +186,22 @@ int leerBateria() {
   return constrain(porcentaje, 0, 100);
 }
 
+bool detectarMovimiento() {
+  if (!mpuReady) {
+    return false;
+  }
+  
+  int16_t ax, ay, az;
+  mpu.getAcceleration(&ax, &ay, &az);
+  
+  // Calcular magnitud de aceleración
+  // Si supera cierto umbral, significa movimiento
+  long accelMag = (long)ax * ax + (long)ay * ay + (long)az * az;
+  
+  // Umbral: 2000000 (aproximadamente 0.5g de aceleración)
+  return (accelMag > 2000000);
+}
+
 void enviarDatos() {
   if (!wifiReady || WiFi.status() != WL_CONNECTED) {
     return;
@@ -212,7 +217,7 @@ void enviarDatos() {
   json += "\"lat\":" + String(gps.location.lat(), 8) + ",";
   json += "\"lng\":" + String(gps.location.lng(), 8) + ",";
   json += "\"battery\":" + String(leerBateria()) + ",";
-  json += "\"moving\":0,";
+  json += "\"moving\":" + String(detectarMovimiento() ? 1 : 0) + ",";
   json += "\"gpsValid\":1,";
   json += "\"gpsTime\":\"" + String(gps.date.year()) + "-" + 
           (gps.date.month() < 10 ? "0" : "") + String(gps.date.month()) + "-" + 
