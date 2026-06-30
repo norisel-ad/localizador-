@@ -10,7 +10,6 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       deviceId TEXT UNIQUE,
       name TEXT,
-      phone TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);

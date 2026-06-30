@@ -3,7 +3,6 @@ const defaultAnimals = [
     id: crypto.randomUUID(),
     deviceId: "GANADO-001",
     name: "Vaca 01",
-    phone: "+50588887777",
     lat: 12.135642,
     lng: -86.251458,
     battery: 82,
@@ -19,7 +18,6 @@ const defaultAnimals = [
     id: crypto.randomUUID(),
     deviceId: "GANADO-003",
     name: "Toro 03",
-    phone: "+50577776666",
     lat: 12.13921,
     lng: -86.24793,
     battery: 28,
@@ -34,7 +32,6 @@ const defaultAnimals = [
     id: crypto.randomUUID(),
     deviceId: "GANADO-008",
     name: "Vaca 08",
-    phone: "+50555554444",
     lat: 12.13174,
     lng: -86.2553,
     battery: 64,
@@ -64,7 +61,6 @@ const lastEvent = document.querySelector("#lastEvent");
 const dialog = document.querySelector("#animalDialog");
 const animalForm = document.querySelector("#animalForm");
 const nameInput = document.querySelector("#animalNameInput");
-const phoneInput = document.querySelector("#animalPhoneInput");
 
 startApp();
 
@@ -75,7 +71,6 @@ async function loadAnimalsFromServer() {
     id: animal.deviceId,
     deviceId: animal.deviceId,
     name: animal.name || animal.deviceId,
-    phone: animal.phone || "",
     lat: animal.lat,
     lng: animal.lng,
     battery: animal.battery,
@@ -105,14 +100,13 @@ function bindEvents() {
   window.addEventListener("resize", refreshMapLayout);
   document.querySelector("#addAnimalBtn").addEventListener("click", () => {
     nameInput.value = "";
-    phoneInput.value = "";
     dialog.showModal();
     nameInput.focus();
   });
   document.querySelector("#cancelDialogBtn").addEventListener("click", () => dialog.close());
   animalForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    await addAnimal(nameInput.value.trim(), phoneInput.value.trim());
+    await addAnimal(nameInput.value.trim());
     dialog.close();
   });
 }
@@ -154,7 +148,6 @@ function renderList() {
       <div class="animal-head">
         <div>
           <div class="animal-name"><span class="animal-emoji" aria-hidden="true">🐮</span>${escapeHtml(animal.name)}</div>
-          <div class="animal-meta">${escapeHtml(animal.phone || "Sin telefono")}</div>
         </div>
         <span class="tag ${status.kind}">${status.label}</span>
       </div>
@@ -286,20 +279,18 @@ function getLocationFallback() {
   return { lat: defaultAnimals[0].lat, lng: defaultAnimals[0].lng };
 }
 
-async function addAnimal(name, phone) {
+async function addAnimal(name) {
   if (!name) {
     return;
   }
 
-  const existing = animals.find((item) => item.phone === phone);
   const fallback = getLocationFallback();
-  const deviceId = existing ? existing.deviceId : `GANADO-${String(Date.now()).slice(-6)}`;
+  const deviceId = `GANADO-${String(Date.now()).slice(-6)}`;
   const animalPayload = {
     deviceId,
     name,
-    phone,
-    lat: existing ? existing.lat : fallback.lat,
-    lng: existing ? existing.lng : fallback.lng,
+    lat: fallback.lat,
+    lng: fallback.lng,
     battery: 100,
     moving: 0,
     gpsValid: 1,

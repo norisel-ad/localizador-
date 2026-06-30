@@ -16,13 +16,12 @@ router.post("/locations", (req, res) => {
   db.serialize(() => {
     db.run(
       `
-        INSERT INTO animals (deviceId, name, phone)
-        VALUES (?, ?, ?)
+        INSERT INTO animals (deviceId, name)
+        VALUES (?, ?)
         ON CONFLICT(deviceId) DO UPDATE SET
-          name = COALESCE(excluded.name, animals.name),
-          phone = COALESCE(excluded.phone, animals.phone)
+          name = COALESCE(excluded.name, animals.name)
       `,
-      [d.deviceId, d.name || defaultName(d.deviceId), d.phone || null],
+      [d.deviceId, d.name || defaultName(d.deviceId)],
       (animalErr) => {
         if (animalErr) {
           return res.status(500).json({ ok: false, error: animalErr.message });
@@ -63,7 +62,6 @@ router.get("/animals", (req, res) => {
         a.id AS animalId,
         a.deviceId,
         a.name,
-        a.phone,
         l.id AS locationId,
         l.lat,
         l.lng,
@@ -98,7 +96,6 @@ router.get("/location/latest", (req, res) => {
         a.id AS animalId,
         a.deviceId,
         a.name,
-        a.phone,
         l.id AS locationId,
         l.lat,
         l.lng,
@@ -129,7 +126,6 @@ router.get("/device/:deviceId", (req, res) => {
         a.id AS animalId,
         a.deviceId,
         a.name,
-        a.phone,
         l.id AS locationId,
         l.lat,
         l.lng,
@@ -188,13 +184,12 @@ router.post("/animals", (req, res) => {
 
   db.run(
     `
-      INSERT INTO animals (deviceId, name, phone)
-      VALUES (?, ?, ?)
+      INSERT INTO animals (deviceId, name)
+      VALUES (?, ?)
       ON CONFLICT(deviceId) DO UPDATE SET
-        name = COALESCE(excluded.name, animals.name),
-        phone = COALESCE(excluded.phone, animals.phone)
+        name = COALESCE(excluded.name, animals.name)
     `,
-    [d.deviceId, d.name || defaultName(d.deviceId), d.phone || null],
+    [d.deviceId, d.name || defaultName(d.deviceId)],
     (err) => {
       if (err) {
         return res.status(500).json({ ok: false, error: err.message });
