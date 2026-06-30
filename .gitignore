@@ -1,0 +1,10 @@
+# Local Node.js dependencies
+servidor/node_modules/
+servidor/package-lock.json
+
+# Local database files
+servidor/database.sqlite
+
+# OS junk
+.DS_Store
+Thumbs.db

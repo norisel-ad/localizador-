@@ -1,0 +1,10 @@
+{
+  "name": "GanadoTrack",
+  "short_name": "GanadoTrack",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#22352d",
+  "description": "Panel para localizar ganado con ESP32, GPS, MPU6050 y SIM800C.",
+  "icons": []
+}

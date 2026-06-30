@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#22352d">
+    <title>GanadoTrack</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css?v=4">
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQv8IhZl3wzRGPBEhG3UXj0YL8W3G0w="
+      crossorigin="">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Localizador inteligente</p>
+        <h1>GanadoTrack</h1>
+      </div>
+      <div class="status-pill" id="systemStatus">Sistema activo</div>
+    </header>
+
+    <main class="layout">
+      <section class="map-area" aria-label="Mapa de ubicaciones">
+        <div id="map"></div>
+        <div class="map-tools">
+          <button type="button" id="centerMapBtn" title="Centrar mapa">Centrar</button>
+          <button type="button" id="simulateAlertBtn" title="Simular alerta">Simular alerta</button>
+        </div>
+      </section>
+
+      <aside class="panel" aria-label="Panel de control">
+        <section class="summary-grid">
+          <article>
+            <span>Animales</span>
+            <strong id="totalAnimals">0</strong>
+          </article>
+          <article>
+            <span>Alertas</span>
+            <strong id="activeAlerts">0</strong>
+          </article>
+          <article>
+            <span>Bateria baja</span>
+            <strong id="lowBattery">0</strong>
+          </article>
+        </section>
+
+        <section class="control-section">
+          <div class="section-title">
+            <h2>Ganado</h2>
+            <button type="button" id="addAnimalBtn">Agregar</button>
+          </div>
+          <div class="animal-list" id="animalList"></div>
+        </section>
+
+        <section class="control-section">
+          <div class="section-title">
+            <h2>Ultimo evento</h2>
+          </div>
+          <div class="event-box" id="lastEvent">Sin eventos recientes.</div>
+        </section>
+      </aside>
+    </main>
+
+    <dialog id="animalDialog">
+      <form id="animalForm" class="dialog-content">
+        <h2>Nuevo animal</h2>
+        <label>
+          Nombre o codigo
+          <input id="animalNameInput" type="text" maxlength="24" placeholder="Vaca 04" required>
+        </label>
+        <label>
+          Telefono SIM800C
+          <input id="animalPhoneInput" type="tel" maxlength="20" placeholder="+50588887777">
+        </label>
+        <p class="field-note">La ubicación se coloca automáticamente según el número de teléfono.</p>
+        <div class="dialog-actions">
+          <button type="button" id="cancelDialogBtn">Cancelar</button>
+          <button type="submit">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin="">
+    </script>
+    <script src="db.js?v=4"></script>
+    <script src="app.js?v=4"></script>
+  </body>
+</html>
