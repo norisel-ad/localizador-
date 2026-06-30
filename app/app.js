@@ -65,18 +65,33 @@ const nameInput = document.querySelector("#animalNameInput");
 startApp();
 
 async function loadAnimalsFromServer() {
-  const response = await fetch(`${API_URL}/animals`);
-  animals = await response.json();
-  animals = animals.map((animal) => ({
-    id: animal.deviceId,
-    deviceId: animal.deviceId,
-    name: animal.name || animal.deviceId,
-    lat: animal.lat,
-    lng: animal.lng,
-    battery: animal.battery,
-    moving: animal.moving === 1,
-    lastSeen: "Ahora",
-    history: []
+  try {
+    const response = await fetch(`${API_URL}/animals`);
+    if (!response.ok) throw new Error("Server error");
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      animals = data.map((animal) => ({
+        id: animal.deviceId,
+        deviceId: animal.deviceId,
+        name: animal.name || animal.deviceId,
+        lat: animal.lat,
+        lng: animal.lng,
+        battery: animal.battery,
+        moving: animal.moving === 1,
+        lastSeen: "Ahora",
+        history: []
+      }));
+      return;
+    }
+  } catch (err) {
+    console.warn("No se pudo conectar al servidor:", err);
+  }
+  
+  // Usar datos de prueba si el servidor no está disponible
+  animals = defaultAnimals.map((animal) => ({
+    ...animal,
+    lastSeen: "Ahora"
   }));
 }
 
