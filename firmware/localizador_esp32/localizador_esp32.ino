@@ -2,8 +2,8 @@
 #include <Wire.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include "../MPU6050.h"
-#include "../TinyGPS++.h"
+#include "MPU6050.h"
+#include "TinyGPS++.h"
 
 /*
   Localizador ESP32 - version anotada para ensamblaje
