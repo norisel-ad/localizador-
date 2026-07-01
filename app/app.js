@@ -61,6 +61,8 @@ const lastEvent = document.querySelector("#lastEvent");
 const dialog = document.querySelector("#animalDialog");
 const animalForm = document.querySelector("#animalForm");
 const nameInput = document.querySelector("#animalNameInput");
+const latInput = document.querySelector("#animalLatInput");
+const lngInput = document.querySelector("#animalLngInput");
 
 startApp();
 
@@ -115,6 +117,8 @@ function bindEvents() {
   window.addEventListener("resize", refreshMapLayout);
   document.querySelector("#addAnimalBtn").addEventListener("click", () => {
     nameInput.value = "";
+    latInput.value = "";
+    lngInput.value = "";
     dialog.showModal();
     nameInput.focus();
   });
@@ -299,13 +303,21 @@ async function addAnimal(name) {
     return;
   }
 
-  const fallback = getLocationFallback();
+  let lat = parseFloat(latInput.value);
+  let lng = parseFloat(lngInput.value);
+  
+  if (isNaN(lat) || isNaN(lng)) {
+    const fallback = getLocationFallback();
+    lat = fallback.lat;
+    lng = fallback.lng;
+  }
+
   const deviceId = `GANADO-${String(Date.now()).slice(-6)}`;
   const animalPayload = {
     deviceId,
     name,
-    lat: fallback.lat,
-    lng: fallback.lng,
+    lat,
+    lng,
     battery: 100,
     moving: 0,
     gpsValid: 1,
