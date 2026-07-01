@@ -1,22 +1,26 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "ESP32",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "C:\\Users\\Ada & Gabo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.10\\cores\\esp32",
+                "C:\\Users\\Ada & Gabo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.10\\libraries\\**",
+                "C:\\Users\\Ada & Gabo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.10\\variants\\esp32",
+                "C:\\Users\\Ada & Gabo\\OneDrive\\Documents\\Arduino\\libraries\\**"
             ],
             "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
+                "ESP32",
+                "ARDUINO_ESP32_DEV",
+                "CORE_DEBUG_LEVEL=0"
             ],
-            "compilerPath": "C:\\mingw64\\bin\\gcc.exe",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "windows-gcc-x64"
+            "compilerPath": "C:\\Users\\Ada & Gabo\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\xtensa-esp32-elf-gcc\\12.0.1_20240111\\bin\\xtensa-esp32-elf-gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "gcc-x64"
         },
         {
-            "name": "add",
+            "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**"
             ],

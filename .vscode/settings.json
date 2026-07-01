@@ -1,0 +1,7 @@
+{
+    "C_Cpp.default.configurationName": "ESP32",
+    "C_Cpp.intelliSenseEngine": "default",
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    }
+}
