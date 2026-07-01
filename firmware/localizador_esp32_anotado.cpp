@@ -43,7 +43,7 @@ const unsigned long UPLOAD_INTERVAL_MS = 15000;  // Enviar datos al servidor cad
 // WiFi
 const char* WIFI_SSID = "TU_SSID";
 const char* WIFI_PASSWORD = "TU_PASSWORD";
-const char* API_SERVER = "http://192.168.1.100:3000/api/locations";  // Cambia la IP
+const char* API_SERVER = "http://192.168.1.53:3000/api/locations";  // IP local del servidor
 const char* DEVICE_ID = "GANADO-ESP32-001";
 
 MPU6050 mpu;

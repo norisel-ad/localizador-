@@ -33,7 +33,7 @@ Antes de compilar, edita `localizador_esp32.ino` y configura:
 ```cpp
 const char* WIFI_SSID = "TU_SSID";           // Cambiar a tu red
 const char* WIFI_PASSWORD = "TU_PASSWORD";  // Cambiar a tu password
-const char* API_SERVER = "http://192.168.1.100:3000/api/locations";  // IP de tu servidor
+const char* API_SERVER = "http://192.168.1.53:3000/api/locations";  // IP de tu servidor
 const char* DEVICE_ID = "GANADO-ESP32-001";
 ```
 
