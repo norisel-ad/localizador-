@@ -1,45 +1,15 @@
 const defaultAnimals = [
   {
     id: crypto.randomUUID(),
-    deviceId: "GANADO-001",
-    name: "Vaca 01",
-    lat: 12.135642,
-    lng: -86.251458,
-    battery: 82,
+    deviceId: "GANADO-ESP32-TEST",
+    name: "Vaca de prueba",
+    lat: 12.13197,
+    lng: -86.26917,
+    battery: 100,
     moving: false,
-    lastSeen: "Hace 2 min",
+    lastSeen: "Ahora",
     history: [
-      { lat: 12.135642, lng: -86.251458, time: "Hace 2 min" },
-      { lat: 12.1345, lng: -86.2509, time: "Hace 12 min" },
-      { lat: 12.1339, lng: -86.2501, time: "Hace 24 min" }
-    ]
-  },
-  {
-    id: crypto.randomUUID(),
-    deviceId: "GANADO-003",
-    name: "Toro 03",
-    lat: 12.13921,
-    lng: -86.24793,
-    battery: 28,
-    moving: true,
-    lastSeen: "Hace 1 min",
-    history: [
-      { lat: 12.13921, lng: -86.24793, time: "Hace 1 min" },
-      { lat: 12.1387, lng: -86.2484, time: "Hace 8 min" }
-    ]
-  },
-  {
-    id: crypto.randomUUID(),
-    deviceId: "GANADO-008",
-    name: "Vaca 08",
-    lat: 12.13174,
-    lng: -86.2553,
-    battery: 64,
-    moving: false,
-    lastSeen: "Hace 7 min",
-    history: [
-      { lat: 12.13174, lng: -86.2553, time: "Hace 7 min" },
-      { lat: 12.1321, lng: -86.2549, time: "Hace 17 min" }
+      { lat: 12.13197, lng: -86.26917, time: "Ahora" }
     ]
   }
 ];
@@ -84,17 +54,67 @@ async function loadAnimalsFromServer() {
         lastSeen: "Ahora",
         history: []
       }));
+      await saveAnimalsLocally(animals);
       return;
     }
   } catch (err) {
     console.warn("No se pudo conectar al servidor:", err);
   }
   
-  // Usar datos de prueba si el servidor no está disponible
+  if (await loadAnimalsFromLocalDB()) {
+    return;
+  }
+
+  // Usar datos de prueba si no hay servidor ni datos locales
   animals = defaultAnimals.map((animal) => ({
     ...animal,
     lastSeen: "Ahora"
   }));
+}
+
+async function loadAnimalsFromLocalDB() {
+  try {
+    const data = await GanadoTrackDb.getAnimalsWithHistory();
+    if (!data || !data.length) {
+      return false;
+    }
+
+    animals = data.map((animal) => ({
+      id: animal.id,
+      deviceId: animal.deviceId,
+      name: animal.name || animal.deviceId,
+      lat: animal.lat,
+      lng: animal.lng,
+      battery: animal.battery ?? 100,
+      moving: animal.moving ?? false,
+      lastSeen: "Ahora",
+      history: animal.history || []
+    }));
+
+    return true;
+  } catch (err) {
+    console.warn("No se pudo cargar animales locales:", err);
+    return false;
+  }
+}
+
+async function saveAnimalsLocally(list) {
+  try {
+    await Promise.all(list.map(async (animal) => {
+      await GanadoTrackDb.putAnimal({
+        id: animal.id,
+        deviceId: animal.deviceId,
+        name: animal.name,
+        lat: animal.lat,
+        lng: animal.lng,
+        battery: animal.battery,
+        moving: animal.moving,
+        createdAt: new Date().toISOString()
+      });
+    }));
+  } catch (err) {
+    console.warn("No se pudieron guardar animales localmente:", err);
+  }
 }
 
 async function startApp() {
@@ -303,15 +323,11 @@ async function addAnimal(name) {
     return;
   }
 
-  let lat = parseFloat(latInput.value);
-  let lng = parseFloat(lngInput.value);
-  
-  if (isNaN(lat) || isNaN(lng)) {
-    const fallback = getLocationFallback();
-    lat = fallback.lat;
-    lng = fallback.lng;
-  }
-
+  const inputLat = parseFloat(latInput.value);
+  const inputLng = parseFloat(lngInput.value);
+  const fallback = getLocationFallback();
+  const lat = Number.isFinite(inputLat) ? inputLat : fallback.lat;
+  const lng = Number.isFinite(inputLng) ? inputLng : fallback.lng;
   const deviceId = `GANADO-${String(Date.now()).slice(-6)}`;
   const animalPayload = {
     deviceId,
@@ -324,12 +340,39 @@ async function addAnimal(name) {
     gpsTime: new Date().toISOString()
   };
 
-  await fetch(`${API_URL}/locations`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(animalPayload)
+  try {
+    await fetch(`${API_URL}/locations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(animalPayload)
+    });
+  } catch (err) {
+    console.warn("No se pudo enviar al servidor, guardando localmente:", err);
+  }
+
+  await GanadoTrackDb.putAnimal({
+    id: deviceId,
+    deviceId,
+    name,
+    lat,
+    lng,
+    battery: 100,
+    moving: false,
+    createdAt: new Date().toISOString()
+  });
+
+  await GanadoTrackDb.putLocation({
+    id: crypto.randomUUID(),
+    animalId: deviceId,
+    lat,
+    lng,
+    battery: 100,
+    moving: false,
+    gpsValid: 1,
+    time: "Ahora",
+    createdAt: new Date().toISOString()
   });
 
   await loadAnimalsFromServer();
