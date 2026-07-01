@@ -1,8 +1,8 @@
 const defaultAnimals = [
   {
     id: crypto.randomUUID(),
-    deviceId: "GANADO-ESP32-TEST",
-    name: "Vaca de prueba",
+    deviceId: "GANADO-004",
+    name: "Vaca 04",
     lat: 12.13197,
     lng: -86.26917,
     battery: 100,
