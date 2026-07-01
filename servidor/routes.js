@@ -71,13 +71,14 @@ router.get("/animals", (req, res) => {
         l.gpsTime,
         l.createdAt
       FROM animals a
-      INNER JOIN locations l ON l.deviceId = a.deviceId
-      INNER JOIN (
+      LEFT JOIN locations l ON l.deviceId = a.deviceId
+      LEFT JOIN (
         SELECT deviceId, MAX(id) AS latestId
         FROM locations
         GROUP BY deviceId
       ) latest ON latest.latestId = l.id
-      ORDER BY l.id DESC
+      WHERE l.id IS NOT NULL OR l.id IS NULL
+      ORDER BY l.createdAt DESC
     `,
     (err, rows) => {
       if (err) {
