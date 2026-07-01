@@ -41,8 +41,8 @@ const unsigned long GPS_PRINT_INTERVAL_MS = 5000; // Mostrar ubicacion cada 5 se
 const unsigned long UPLOAD_INTERVAL_MS = 15000;  // Enviar datos al servidor cada 15 segundos
 
 // WiFi
-const char* WIFI_SSID = "TU_SSID";
-const char* WIFI_PASSWORD = "TU_PASSWORD";
+const char* WIFI_SSID = "GABRIEL17 2.4GHZ";
+const char* WIFI_PASSWORD = "17102024GA";
 const char* API_SERVER = "http://192.168.1.53:3000/api/locations";  // IP local del servidor
 const char* DEVICE_ID = "GANADO-ESP32-001";
 
