@@ -2,116 +2,130 @@
 #include <Wire.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include "MPU6050.h"
-#include "TinyGPS++.h"
+#include "../MPU6050.h"
+#include "../TinyGPS++.h"
 
 /*
-  Localizador ESP32 - version recomendada para primeras pruebas
+  Localizador ESP32 - version anotada para ensamblaje
 
   Componentes:
   - ESP-32D
   - GPS NEO-6M con antena GPS
-  - MPU6050
-  - Bateria 18650
+  - Sensor MPU6050
+  - Bateria recargable 18650
   - Regulador LM2596
 
-  Antes de conectar:
-  - Ajusta el LM2596 con multimetro antes de alimentar la ESP32.
-  - Une todas las tierras: ESP32, GPS, MPU6050 y regulador.
-  - Cambia los pines de esta seccion cuando definas tu cableado final.
+  TODO ANTES DE ENSAMBLAR:
+  - Confirmar los pines reales segun como armes el circuito.
+  - Ajustar el LM2596 antes de conectar la ESP32. La ESP32 debe recibir 5V por VIN/5V
+    o 3.3V regulados por el pin 3V3, segun tu placa. No conectes voltajes sin medir.
+  - Unir todas las tierras: ESP32 GND, GPS GND, MPU6050 GND y regulador GND.
+
+  Notas de conexion:
+  - En UART, TX del GPS va al RX de la ESP32, y RX del GPS va al TX de la ESP32.
+  - El MPU6050 usa I2C: SDA y SCL.
+  - El GPS NEO-6M normalmente trabaja a 9600 baudios.
 */
 
-
-// CONFIGURACION
-
-const int GPS_RX_PIN = 26;  // ESP32 RX <- NEO-6M TX
-const int GPS_TX_PIN = 27;  // ESP32 TX -> NEO-6M RX
-const int MPU_SDA_PIN = 21; // MPU6050 SDA
-const int MPU_SCL_PIN = 22; // MPU6050 SCL
+// TODO PINES: cambia estos valores cuando definas el cableado final.
+const int GPS_RX_PIN = 26;  // ESP32 RX conectado al TX del NEO-6M
+const int GPS_TX_PIN = 27;  // ESP32 TX conectado al RX del NEO-6M
+const int MPU_SDA_PIN = 21; // SDA del MPU6050
+const int MPU_SCL_PIN = 22; // SCL del MPU6050
 const int BATTERY_PIN = 34;  // ADC para lectura de bateria
 
 const long SERIAL_BAUD = 115200;
 const long GPS_BAUD = 9600;
 
-const unsigned long GPS_PRINT_INTERVAL_MS = 5000;
-const unsigned long UPLOAD_INTERVAL_MS = 15000;  // Enviar datos cada 15 segundos
+const unsigned long GPS_PRINT_INTERVAL_MS = 5000; // Mostrar ubicacion cada 5 segundos
+const unsigned long UPLOAD_INTERVAL_MS = 15000;  // Enviar datos al servidor cada 15 segundos
 
 // WiFi
 const char* WIFI_SSID = "TU_SSID";
 const char* WIFI_PASSWORD = "TU_PASSWORD";
-const char* API_SERVER = "http://192.168.1.100:3000/api/locations";  // Cambia la IP del servidor
+const char* API_SERVER = "http://192.168.1.100:3000/api/locations";  // Cambia la IP
 const char* DEVICE_ID = "GANADO-ESP32-001";
 
-// OBJETOS Y ESTADO
-
-HardwareSerial gpsSerial(2);
-TinyGPSPlus gps;
 MPU6050 mpu;
+TinyGPSPlus gps;
 
-bool mpuReady = false;
-bool wifiReady = false;
+HardwareSerial gpsSerial(2); // UART2 para NEO-6M
 
-unsigned long lastGpsPrintTime = 0;
+unsigned long lastPrintTime = 0;
 unsigned long lastUploadTime = 0;
 
-// =========================
-// SETUP
-// =========================
+bool mpuOK = false;
+bool gpsOK = false;
+bool wifiOK = false;
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
+  gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+
+  Wire.begin(MPU_SDA_PIN, MPU_SCL_PIN);
   delay(500);
 
-  Serial.println();
-  Serial.println("=== Localizador ESP32 ===");
-  Serial.println("Iniciando diagnostico...");
+  Serial.println("Iniciando sistema...");
 
-  iniciarPuertos();
-  iniciarMPU();
+  mpu.initialize();
+  if (mpu.testConnection()) {
+    Serial.println("MPU6050 conectado correctamente.");
+    mpuOK = true;
+  } else {
+    Serial.println("Error: no se detecto el MPU6050.");
+  }
+  
+  // Conectar a WiFi
   iniciarWiFi();
 
-  Serial.println("Sistema listo para recibir datos de GPS.");
-  Serial.println("Nota: el NEO-6M puede tardar varios minutos en obtener posicion al aire libre.");
+  Serial.println("Esperando datos de GPS...");
 }
 
 void loop() {
-  leerGPS();
-  reportarEstadoGPS();
-  
-  // Enviar datos al servidor cada UPLOAD_INTERVAL_MS
-  if (wifiReady && millis() - lastUploadTime >= UPLOAD_INTERVAL_MS) {
-    if (gps.location.isValid() && gps.satellites.value() >= 3) {
+  while (gpsSerial.available()) {
+    gps.encode(gpsSerial.read());
+  }
+
+  if (gps.location.isValid() && gps.satellites.value() >= 3) {
+    gpsOK = true;
+    float lat = gps.location.lat();
+    float lng = gps.location.lng();
+
+    if (millis() - lastPrintTime >= GPS_PRINT_INTERVAL_MS) {
+      Serial.print("GPS OK | Lat: ");
+      Serial.print(lat, 6);
+      Serial.print(" Lng: ");
+      Serial.println(lng, 6);
+
+      int16_t ax = 0;
+      int16_t ay = 0;
+      int16_t az = 0;
+      if (mpuOK) {
+        mpu.getAcceleration(&ax, &ay, &az);
+        Serial.print("Accel - X: ");
+        Serial.print(ax);
+        Serial.print(" Y: ");
+        Serial.print(ay);
+        Serial.print(" Z: ");
+        Serial.println(az);
+      }
+
+      lastPrintTime = millis();
+    }
+    
+    // Enviar datos al servidor cada UPLOAD_INTERVAL_MS
+    if (wifiOK && millis() - lastUploadTime >= UPLOAD_INTERVAL_MS) {
       enviarDatos();
     }
-  }
-  
-  delay(100);
-}
-
-// =========================
-// INICIALIZACION
-// =========================
-
-void iniciarPuertos() {
-  gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-  Wire.begin(MPU_SDA_PIN, MPU_SCL_PIN);
-  delay(100);
-
-  Serial.println("Puertos iniciados.");
-}
-
-void iniciarMPU() {
-  Serial.print("MPU6050: ");
-  mpu.initialize();
-  delay(200);
-
-  if (mpu.testConnection()) {
-    mpuReady = true;
-    Serial.println("OK");
   } else {
-    mpuReady = false;
-    Serial.println("no detectado. Revisa SDA (pin 21), SCL (pin 22), VCC y GND.");
+    gpsOK = false;
+    if (millis() - lastPrintTime >= GPS_PRINT_INTERVAL_MS) {
+      Serial.println("Esperando senal GPS valida...");
+      lastPrintTime = millis();
+    }
   }
+
+  delay(100);
 }
 
 void iniciarWiFi() {
@@ -130,47 +144,12 @@ void iniciarWiFi() {
   Serial.println();
   
   if (WiFi.status() == WL_CONNECTED) {
-    wifiReady = true;
+    wifiOK = true;
     Serial.print("WiFi: OK | IP: ");
     Serial.println(WiFi.localIP());
   } else {
-    wifiReady = false;
+    wifiOK = false;
     Serial.println("WiFi: no se pudo conectar. Revisa SSID y password.");
-  }
-}
-
-// =========================
-// GPS
-// =========================
-
-void leerGPS() {
-  while (gpsSerial.available()) {
-    gps.encode(gpsSerial.read());
-  }
-}
-
-void reportarEstadoGPS() {
-  if (millis() - lastGpsPrintTime < GPS_PRINT_INTERVAL_MS) {
-    return;
-  }
-
-  lastGpsPrintTime = millis();
-
-  Serial.print("GPS: ");
-  if (gps.location.isValid() && gps.satellites.value() >= 3) {
-    Serial.print("OK | sats=");
-    Serial.print(gps.satellites.value());
-    Serial.print(" | lat=");
-    Serial.print(gps.location.lat(), 6);
-    Serial.print(" | lng=");
-    Serial.println(gps.location.lng(), 6);
-  } else {
-    Serial.print("esperando posicion valida");
-    if (gps.satellites.isValid()) {
-      Serial.print(" | sats=");
-      Serial.print(gps.satellites.value());
-    }
-    Serial.println();
   }
 }
 
@@ -186,24 +165,8 @@ int leerBateria() {
   return constrain(porcentaje, 0, 100);
 }
 
-bool detectarMovimiento() {
-  if (!mpuReady) {
-    return false;
-  }
-  
-  int16_t ax, ay, az;
-  mpu.getAcceleration(&ax, &ay, &az);
-  
-  // Calcular magnitud de aceleración
-  // Si supera cierto umbral, significa movimiento
-  long accelMag = (long)ax * ax + (long)ay * ay + (long)az * az;
-  
-  // Umbral: 2000000 (aproximadamente 0.5g de aceleración)
-  return (accelMag > 2000000);
-}
-
 void enviarDatos() {
-  if (!wifiReady || WiFi.status() != WL_CONNECTED) {
+  if (!wifiOK || WiFi.status() != WL_CONNECTED) {
     return;
   }
 
@@ -217,7 +180,7 @@ void enviarDatos() {
   json += "\"lat\":" + String(gps.location.lat(), 8) + ",";
   json += "\"lng\":" + String(gps.location.lng(), 8) + ",";
   json += "\"battery\":" + String(leerBateria()) + ",";
-  json += "\"moving\":" + String(detectarMovimiento() ? 1 : 0) + ",";
+  json += "\"moving\":0,";
   json += "\"gpsValid\":1,";
   json += "\"gpsTime\":\"" + String(gps.date.year()) + "-" + 
           (gps.date.month() < 10 ? "0" : "") + String(gps.date.month()) + "-" + 
